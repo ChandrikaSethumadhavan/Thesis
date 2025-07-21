@@ -1,3 +1,4 @@
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -135,6 +136,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
+thesis/
 .env
 .envrc
 .venv
@@ -205,3 +207,4 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+"M2_2.18mM_pressure_o2_release.csv" 
