@@ -548,4 +548,3 @@ if __name__ == "__main__":
         main_henry_analysis(file_path, interactive=True)
     else:
         main_henry_analysis(file_path, interactive=False)
-
