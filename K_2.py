@@ -119,7 +119,7 @@ def fit_optimal_models(df):
     
     # MODEL 1
    
-    P_total_guess = P_plateau * 2
+    P_total_guess = df["Pressure (atm)"].max()
     H_guess = 1.3e-3
     
     popt1, pcov1 = curve_fit(
