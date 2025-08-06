@@ -10,6 +10,8 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from matplotlib.lines import Line2D
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 
+
+
 # Define optical sample data, M1 = 20 mmicromolar
 samples = {
     "M1": {

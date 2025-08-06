@@ -1,4 +1,4 @@
-# Simplified Logistic-Henry Model with Automatic Plotting
+#Simplified Logistic-Henry Model with Automatic Plotting
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -16,7 +16,7 @@ def load_pressure_data(file_path):
         
     
 
-def logistic_henry_model(time, n_total_max, growth_rate, lag_time, H, V_solution = 0.006, V_headspace = 0.002, R=0.08206, T= 297): #Vsol and headspace will change depemdnding on ip
+def logistic_henry_model(time, n_total_max, growth_rate, lag_time, H, V_solution = 0.006, V_headspace = 0.002, R=0.08206, T=310.15): #Vsol and headspace will change depemdnding on ip
 
    # to handle reaction kinetics
     n_total = n_total_max / (1 + np.exp(-growth_rate * (time - lag_time))) #logistic formula models total O2 released over time using logistic growth
@@ -28,11 +28,19 @@ def logistic_henry_model(time, n_total_max, growth_rate, lag_time, H, V_solution
     # deetectable O₂ in headspace
     n_gas = n_total * partition_fraction  #logistic x henry model
     
-    print("n_gas values", n_gas[0])  # Debugging output
+    #print("n_gas values", n_gas[0])  # Debugging output
+    return n_gas
+
+def first_order_henry_model(time, n_total_max, rate_constant, H, V_solution=0.006, V_headspace=0.002, R=0.08206, T=310.15):
+    n_total = n_total_max * (1 - np.exp(-rate_constant * time))  # first-order reaction kinetics
+    denominator = (V_headspace / (R * T)) + (H * V_solution)
+    partition_fraction = (V_headspace / (R * T)) / denominator
+    n_gas = n_total * partition_fraction
     return n_gas
 
 
-def fit_logistic_model(df, V_solution, V_headspace):
+
+def fit_models(df, V_solution, V_headspace):
     
     #Uses nonlinear least squares (Levenberg-Marquardt) to fit combined model to real pressure/O2 data.
     
@@ -47,18 +55,18 @@ def fit_logistic_model(df, V_solution, V_headspace):
 
     # to override the problem of oxygen dissolvability for now, we will use a more conservative estimate for n_total_max
 
-    estimated_n_total_max = max_measured * 2.5  # Conservative scaling  ie for 13 theoretical , we got 4.82 only so now, 4.82 * 2.5 = 12.05 < 13.08(theoretical)
-    if estimated_n_total_max > n_total_theoretical:
-        estimated_n_total_max = n_total_theoretical * 0.8
+    # 
+    estimated_n_total_max = min(max_measured * 3, n_total_theoretical * 0.95)
 
-    print(f"Estimated n_total_max: {estimated_n_total_max:.2f} µmol")  # Debugging output
+   # print(f"Estimated n_total_max: {estimated_n_total_max:.2f} µmol")  # Debugging output
     
     
 # K growth rate estimation
     slopes = np.gradient(n_gas_measured, time_data)
     max_slope = np.max(slopes)
     estimated_growth_rate = (4 * max_slope) / estimated_n_total_max
-   
+    estimated_growth_rate *= 4
+
     
     # lag time estimation
     # Find point closet to 50% of max
@@ -106,6 +114,7 @@ def fit_logistic_model(df, V_solution, V_headspace):
         
         # Strategy 3: tarts from a very simple, generic guess but with bounds
         ([max_measured * 2, 1e-5, time_data.max()/2, 0.02], lower_bounds, upper_bounds)
+
     ]
 
     
@@ -125,14 +134,34 @@ def fit_logistic_model(df, V_solution, V_headspace):
             
             # Calculate fit quality
             n_gas_predicted = logistic_henry_model(time_data, *popt)  #This simulates the oxygen release using the best-fit parameters.
-            # r2 = r2_score(n_gas_measured, n_gas_predicted)
-            # rmse = np.sqrt(mean_squared_error(n_gas_measured, n_gas_predicted))
+            #return popt, time_data, n_gas_measured, n_gas_predicted
             
-            # print(f"✅ Strategy {strategy_num} fitted successfully!")
-            # print(f"   R²: {r2:.4f}, RMSE: {rmse:.4f}")
-            # print(f"   Parameters: {popt}")
             
-            return popt, time_data, n_gas_measured, n_gas_predicted
+    def first_order_model(t, n_tot, k, H):
+        return first_order_henry_model(t, n_tot, k, H, V_solution=V_solution, V_headspace=V_headspace)
+
+    p0_fo = [estimated_n_total_max, 1e-5, initial_H]
+    bounds_fo = ([max_measured, 1e-8, 1e-6], [n_total_theoretical * 5, 1e-1, 1.0])
+    popt_fo, _ = curve_fit(first_order_model, time_data, n_gas_measured, p0=p0_fo, bounds=bounds_fo)
+
+    n_gas_pred_fo = first_order_model(time_data, *popt_fo)
+
+    from sklearn.metrics import r2_score, mean_squared_error
+    r2_log = r2_score(n_gas_measured, n_gas_predicted)
+    rmse_log = np.sqrt(mean_squared_error(n_gas_measured, n_gas_predicted))
+
+    r2_fo = r2_score(n_gas_measured, n_gas_pred_fo)
+    rmse_fo = np.sqrt(mean_squared_error(n_gas_measured, n_gas_pred_fo))
+
+    print("\n--- Model Fit Comparison ---")
+    print(f"Logistic-Henry:     R² = {r2_log:.4f}, RMSE = {rmse_log:.4f}")
+    print(f"First-Order-Henry:  R² = {r2_fo:.4f}, RMSE = {rmse_fo:.4f}")
+
+    return {
+        'logistic': (popt, time_data, n_gas_measured, n_gas_predicted, r2_log, rmse_log),
+        'first_order': (popt_fo, time_data, n_gas_measured, n_gas_pred_fo, r2_fo, rmse_fo)
+    }
+        
             
         
 
@@ -236,7 +265,7 @@ def predict_and_plot_enhanced(fitted_params, V_solution, V_headspace, setup_name
     
     # Panel 1: Improvement comparison
     plt.subplot(1, 3, 1)
-    scenarios = ['Baseline\n(6ml:2ml)', f'Your Setup\n({V_solution*1000:.1f}:{V_headspace*1000:.1f}ml)']
+    scenarios = ['Baseline\n(6ml:2ml)', f'Setup\n({V_solution*1000:.1f}:{V_headspace*1000:.1f}ml)']
     detections = [baseline_detection, final_detection]
     colors = ['gray', color_main]
     
@@ -296,26 +325,26 @@ def predict_and_plot_enhanced(fitted_params, V_solution, V_headspace, setup_name
     target = final_detection * milestones[0]
     idx = np.argmin(np.abs(predicted_n_gas - target))
     
-#     stats_text = f"""
-# SUMMARY STATISTICS
+    stats_text = f"""
+SUMMARY STATISTICS
 
-# Volume Setup:
-# • Solution: {V_solution*1000:.1f} ml
-# • Headspace: {V_headspace*1000:.1f} ml  
-# • Total: {total_volume*1000:.1f} ml
-# • Ratio: {ratio:.2f}
+Volume Setup:
+• Solution: {V_solution*1000:.1f} ml
+• Headspace: {V_headspace*1000:.1f} ml  
+• Total: {total_volume*1000:.1f} ml
+• Ratio: {ratio:.2f}
 
-# Performance:
-# • Final Detection: {final_detection:.4f} µmol
-# • Efficiency: {efficiency:.1f}%
-# • Improvement: {improvement:+.1f}%
-# • Assessment: {quality}
+Performance:
+• Final Detection: {final_detection:.4f} µmol
+• Efficiency: {efficiency:.1f}%
+• Improvement: {improvement:+.1f}%
+• Assessment: {quality}
 
-# """
+"""
     
-#     plt.text(0.05, 0.95, stats_text, transform=plt.gca().transAxes, fontsize=10,
-#              verticalalignment='top', fontfamily='monospace',
-#              bbox=dict(boxstyle='round', facecolor='lightgray', alpha=0.8))
+    plt.text(0.05, 0.95, stats_text, transform=plt.gca().transAxes, fontsize=10,
+             verticalalignment='top', fontfamily='monospace',
+             bbox=dict(boxstyle='round', facecolor='lightgray', alpha=0.8))
     
     plt.tight_layout()
     plt.show()
@@ -336,9 +365,25 @@ def main_analysis():
     V_solution = V_sol_ml / 1000
     V_headspace = V_head_ml / 1000
 
-    fit_results = fit_logistic_model(df, V_solution, V_headspace)
+    fit_results_dict = fit_models(df, V_solution, V_headspace)
+    log_fit = fit_results_dict['logistic']
+    fo_fit = fit_results_dict['first_order']
 
-    fitted_params, time_data, n_gas_measured, n_gas_predicted = fit_results
+    # fitted_params, time_data, n_gas_measured, n_gas_predicted = fit_results_dict
+    popt_fo, time_data_fo, n_gas_measured_fo, n_gas_pred_fo, r2_fo, rmse_fo = fit_results_dict['first_order']
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(log_fit[1]/3600, log_fit[2], 'k.', label='Measured Data')
+    plt.plot(log_fit[1]/3600, log_fit[3], 'g-', label='Logistic Fit')
+    plt.plot(fo_fit[1]/3600, fo_fit[3], 'r--', label='First-Order Fit')
+    plt.xlabel('Time (hours)')
+    plt.ylabel('O₂ Released (µmol)')
+    plt.title('Model Comparison: Logistic vs First-Order')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
     
     
     

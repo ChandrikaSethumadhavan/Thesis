@@ -11,11 +11,11 @@ V_solution = 0.006  # L
 V_headspace = 0.002  # L
 
 # Half-lives in seconds from literature
-half_life_24C = 35.8 * 3600  # 24°C
+half_life_24C = 35.8 * 3600  # 24°C   Convert from hours to seconds
 half_life_37C = 4.7 * 3600   # 37°C
 
-# Corresponding first-order rate constants
-k_24 = log(2) / half_life_24C
+# Converts the half-lives into first-order rate constants to be used
+k_24 = log(2) / half_life_24C 
 k_37 = log(2) / half_life_37C
 
 # Temperatures in Kelvin
