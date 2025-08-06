@@ -13,6 +13,9 @@ def load_pressure_data(file_path):
     
     return clean_df
 
+
+# max theoretical o2 is p_total_mx
+
 def improved_logistic_henry_model(time, P_total_max, k, t_lag, H, P_baseline,
                                  V_solution=0.006, V_headspace=0.002, R=0.08206, T=297.15):
     # Logistic growth for total pressure
@@ -73,8 +76,7 @@ def analyze_data_fit_quality(pressure_measured, time_data, prediction, model_nam
         'Late': late_mask
     }
     
-    print(f"\n{model_name} - Regional Fit Analysis:")
-    print("="*50)
+   
     
     overall_r2 = r2_score(pressure_measured, prediction)
     overall_rmse = np.sqrt(mean_squared_error(pressure_measured, prediction))  # atm units
@@ -102,15 +104,15 @@ def fit_optimal_models(df):
     pressure_measured = df['Pressure (atm)'].values
     
 
-    baseline_points = int(len(pressure_measured) * 0.1)
-    P_baseline = np.mean(pressure_measured[:baseline_points])
+    baseline_points = int(len(pressure_measured) * 0.1)  #creating a baseline by taking the mean value of first 10 % datapoints
+    P_baseline = np.mean(pressure_measured[:baseline_points])  
     plateau_points = int(len(pressure_measured) * 0.2)
-    P_plateau = np.mean(pressure_measured[-plateau_points:])
+    P_plateau = np.mean(pressure_measured[-plateau_points:]) #final pressure is the mean of the last 20 points
     
-    smoothed_data = np.convolve(pressure_measured - P_baseline, np.ones(5)/5, mode='same')
-    derivatives = np.gradient(smoothed_data, time_data)
-    inflection_idx = np.argmax(derivatives)
-    t_inflection = time_data[inflection_idx]
+    #smoothed_data = np.convolve(pressure_measured - P_baseline, np.ones(5)/5, mode='same')  # smoothing the curve further
+    derivatives = np.gradient(pressure_measured, time_data)
+    inflection_idx = np.argmax(derivatives) #wkt infletion point is the max slope point
+    t_inflection = time_data[inflection_idx] #t5aking that time
     
     max_slope = np.max(derivatives)
     k_estimate = 4 * max_slope / (P_plateau - P_baseline)
