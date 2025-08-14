@@ -30,29 +30,7 @@ def improved_logistic_henry_model(time, P_total_max, k, t_lag, H, P_baseline,
     
     return P_gas
 
-def early_improved_logistic_henry(time, P_total_max, k, t_lag, H, P_baseline, early_factor=1.0,
-                                 V_solution=0.006, V_headspace=0.002, R=0.08206, T=297.15):
-    # Logistic growth with optional early adjustment
-    logistic_term = 1 / (1 + np.exp(-k * (time - t_lag)))
-    
-    # Optional: slower start for very early times
-    if early_factor != 1.0:
-        early_mask = time < t_lag
-        early_adjustment = np.where(early_mask, 
-                                  logistic_term ** early_factor,  # Slower early growth
-                                  logistic_term)                 # Normal later growth
-    else:
-        early_adjustment = logistic_term
-    
-    P_total = P_baseline + (P_total_max - P_baseline) * early_adjustment
-    
-    # Henry's Law partitioning (same as before)
-    denominator = (V_headspace / (R * T)) + (H * V_solution)
-    partition_fraction = (V_headspace / (R * T)) / denominator
-    
-    P_gas = P_baseline + (P_total - P_baseline) * partition_fraction
-    
-    return P_gas
+
 
 def analyze_data_fit_quality(pressure_measured, time_data, prediction, model_name):
     """
