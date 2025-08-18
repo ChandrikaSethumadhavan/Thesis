@@ -1,45 +1,45 @@
-import pandas as pd
-import matplotlib.pyplot as plt
-from pathlib import Path
+# import pandas as pd
+# import matplotlib.pyplot as plt
+# from pathlib import Path
 
 
-csv_path = "M2_2.18mM_pressure_o2_release.csv"   
-time_col = "Time (s)"
-press_col = "DWT denoised pressure (kPa)"
+# csv_path = "M2_2.18mM_pressure_o2_release.csv"   
+# time_col = "Time (s)"
+# press_col = "DWT denoised pressure (kPa)"
 
 
-# Constants (room temp water)
-ATM_KPA = 101.325           # kPa per atm
-kH = 1.3e-3                 # mol/L/atm  (Henry's for O2 in water ~RT)
-Vsol_L = 0.006              # L (your solution volume)
+# # Constants (room temp water)
+# ATM_KPA = 101.325           # kPa per atm
+# kH = 1.3e-3                 # mol/L/atm  (Henry's for O2 in water ~RT)
+# Vsol_L = 0.006              # L (your solution volume)
 
-def compute_n_aq_umol_from_gauge_kpa(p_kpa: pd.Series) -> pd.Series:
+# def compute_n_aq_umol_from_gauge_kpa(p_kpa: pd.Series) -> pd.Series:
 
     
-    P_atm = pd.to_numeric(p_kpa) / ATM_KPA
-    n_aq_umol = kH * P_atm * Vsol_L * 1e6
-    return n_aq_umol
+#     P_atm = pd.to_numeric(p_kpa) / ATM_KPA
+#     n_aq_umol = kH * P_atm * Vsol_L * 1e6
+#     return n_aq_umol
 
-df = pd.read_csv(csv_path)
-df.columns = [c.strip() for c in df.columns]
-time_h = df[time_col].astype(float)
-n_aq_umol = compute_n_aq_umol_from_gauge_kpa(df[press_col].astype(float))
+# df = pd.read_csv(csv_path)
+# df.columns = [c.strip() for c in df.columns]
+# time_h = df[time_col].astype(float)
+# n_aq_umol = compute_n_aq_umol_from_gauge_kpa(df[press_col].astype(float))
 
 
-df_out = pd.DataFrame({
-    "Elapsed Time (h)": time_h,
-    "n_aq (µmol)": n_aq_umol
-})
+# df_out = pd.DataFrame({
+#     "Elapsed Time (h)": time_h,
+#     "n_aq (µmol)": n_aq_umol
+# })
 
-print(max(n_aq_umol))
+# print(max(n_aq_umol))
 
-plt.figure(figsize=(7.2, 4.5))
-plt.plot(df_out["Elapsed Time (h)"], df_out["n_aq (µmol)"], linewidth=2)
-plt.xlabel("Elapsed Time (h)")
-plt.ylabel("O₂ released (µmol)  — dissolved (n_aq)")
-plt.grid(True, alpha=0.3)
-plt.tight_layout()
-plt.show()
+# plt.figure(figsize=(7.2, 4.5))
+# plt.plot(df_out["Elapsed Time (h)"], df_out["n_aq (µmol)"], linewidth=2)
+# plt.xlabel("Elapsed Time (h)")
+# plt.ylabel("O₂ released (µmol)  — dissolved (n_aq)")
+# plt.grid(True, alpha=0.3)
+# plt.tight_layout()
+# plt.show()
 
 
 
@@ -113,59 +113,58 @@ plt.show()
 # directly plotting without seeing the difference:
 
 
-# import pandas as pd 
-# import matplotlib.pyplot as plt
+import pandas as pd 
+import matplotlib.pyplot as plt
 
-# # ------------------ inputs ------------------
-# csv_path  = "M2_2.18mM_pressure_o2_release.csv"
-# time_col  = "Time (s)"                    # already in hours (per your note)
-# press_col = "DWT denoised pressure (kPa)" # PO2 in kPa (no +ATM)
-# gas_col   = "O2 Released (µmol)"          # headspace O2 from your CSV
-# n_theory  = 13.08                         # µmol (theoretical)
-# # -------------------------------------------
+# ------------------ inputs ------------------
+csv_path  = "M2_2.18mM_pressure_o2_release.csv"
+time_col  = "Time (s)"                    
+press_col = "DWT denoised pressure (kPa)" # PO2 in kPa (no +ATM)
+gas_col   = "O2 Released (µmol)"          # headspace O2 from csv
+n_theory  = 13.08                         # µmol (theoretical)
+# -------------------------------------------
 
-# # Constants (room temp water)
-# ATM_KPA = 101.325        # kPa per atm
-# kH = 1.3e-3              # mol/L/atm (O2 in water ~RT)
-# Vsol_L = 0.006           # L
+# Constants (room temp water)
+ATM_KPA = 101.325        # kPa per atm
+kH = 1.3e-3              # mol/L/atm (O2 in water ~RT)
+Vsol_L = 0.006           # L
 
-# def n_aq_umol_from_kpa(P_kpa: pd.Series) -> pd.Series:
-#     # Treat pressure column as PO2 in kPa -> atm, then Henry's law
-#     P_atm = pd.to_numeric(P_kpa, errors="coerce") / ATM_KPA
-#     return kH * P_atm * Vsol_L * 1e6  # µmol
+def n_aq_umol_from_kpa(P_kpa: pd.Series) -> pd.Series:
 
-# # --- load & clean ---
-# df = pd.read_csv(csv_path)
-# df.columns = [c.strip() for c in df.columns]
+    P_atm = pd.to_numeric(P_kpa, errors="coerce") / ATM_KPA
+    return kH * P_atm * Vsol_L * 1e6  # µmol
 
 
-# time_h     = pd.to_numeric(df[time_col])
-# p_kpa      = pd.to_numeric(df[press_col])
-# n_gas_umol = pd.to_numeric(df[gas_col])
+df = pd.read_csv(csv_path)
+df.columns = [c.strip() for c in df.columns]
+
+
+time_h     = pd.to_numeric(df[time_col])
+p_kpa      = pd.to_numeric(df[press_col])
+n_gas_umol = pd.to_numeric(df[gas_col])
 
 
 
-# # Start time at 0 (column is already hours)
-# time_h = time_h - time_h.iloc[0]
+time_h = time_h - time_h.iloc[0]
 
-# # --- compute dissolved & TOTAL O2 (absolute) ---
-# n_aq_umol_abs = n_aq_umol_from_kpa(p_kpa)
-# n_tot_umol    = n_gas_umol + n_aq_umol_abs
-# print (max(n_tot_umol))
 
-# # ---------- SINGLE PLOT: n_tot vs time with baseline ----------
-# plt.figure(figsize=(8.2, 4.8))
-# plt.plot(time_h, n_tot_umol, linewidth=2.3, label="Total O₂ = n_gas + nₐq (µmol)")
-# plt.axhline(n_theory, linestyle="--", linewidth=1.6, color="black", label=f"Baseline = {n_theory} µmol")
-# plt.xlabel("Elapsed Time (h)")
-# plt.ylabel("Total O₂ (µmol)")
-# plt.grid(True, alpha=0.3)
-# plt.xlim(left=0)
-# ymax = max(n_theory, n_tot_umol.max())
-# plt.ylim(0, ymax * 1.05)
-# plt.legend()
-# plt.tight_layout()
-# plt.show()
+n_aq_umol_abs = n_aq_umol_from_kpa(p_kpa)
+n_tot_umol    = n_gas_umol + n_aq_umol_abs
+print (max(n_tot_umol))
+
+
+plt.figure(figsize=(8.2, 4.8))
+plt.plot(time_h, n_tot_umol, linewidth=2.3, label="Total O₂ = n_gas + nₐq (µmol)")
+plt.axhline(n_theory, linestyle="--", linewidth=1.6, color="black", label=f"Baseline = {n_theory} µmol")
+plt.xlabel("Elapsed Time (h)")
+plt.ylabel("Total O₂ (µmol)")
+plt.grid(True, alpha=0.3)
+plt.xlim(left=0)
+ymax = max(n_theory, n_tot_umol.max())
+plt.ylim(0, ymax * 1.05)
+plt.legend()
+plt.tight_layout()
+plt.show()
 
 
 #==============================================================================================
@@ -631,67 +630,67 @@ plt.show()
 
 
 
-import pandas as pd
-import matplotlib.pyplot as plt
-from pathlib import Path
+# import pandas as pd
+# import matplotlib.pyplot as plt
+# from pathlib import Path
 
-# ------------------ inputs ------------------
-csv_path  = "M2_2.18mM_pressure_o2_release.csv"
-time_col  = "Time (s)"                    # already in hours (legacy name)
-press_col = "DWT denoised pressure (kPa)" # PO2 in kPa (no +ATM)
-gas_col   = "O2 Released (µmol)"          # headspace O2 from your CSV
-n_theory  = 13.08                         # µmol (theoretical)
-# -------------------------------------------
+# # ------------------ inputs ------------------
+# csv_path  = "M2_2.18mM_pressure_o2_release.csv"
+# time_col  = "Time (s)"                    # already in hours (legacy name)
+# press_col = "DWT denoised pressure (kPa)" # PO2 in kPa (no +ATM)
+# gas_col   = "O2 Released (µmol)"          # headspace O2 from your CSV
+# n_theory  = 13.08                         # µmol (theoretical)
+# # -------------------------------------------
 
-# Constants (room temp water)
-ATM_KPA = 101.325        # kPa per atm
-kH = 1.3e-3              # mol/L/atm (O2 in water ~RT)
-Vsol_L = 0.006           # L
+# # Constants (room temp water)
+# ATM_KPA = 101.325        # kPa per atm
+# kH = 1.3e-3              # mol/L/atm (O2 in water ~RT)
+# Vsol_L = 0.006           # L
 
-def n_aq_umol_from_kpa(p_kpa: pd.Series) -> pd.Series:
-    """Treat pressure column as PO2 in kPa -> atm, then Henry's law to µmol."""
-    P_atm = pd.to_numeric(p_kpa, errors="coerce") / ATM_KPA
-    return kH * P_atm * Vsol_L * 1e6  # µmol
+# def n_aq_umol_from_kpa(p_kpa: pd.Series) -> pd.Series:
+#     """Treat pressure column as PO2 in kPa -> atm, then Henry's law to µmol."""
+#     P_atm = pd.to_numeric(p_kpa, errors="coerce") / ATM_KPA
+#     return kH * P_atm * Vsol_L * 1e6  # µmol
 
-# --- load & clean ---
-df = pd.read_csv(csv_path)
-df.columns = [c.strip() for c in df.columns]
+# # --- load & clean ---
+# df = pd.read_csv(csv_path)
+# df.columns = [c.strip() for c in df.columns]
 
-time_h     = pd.to_numeric(df[time_col], errors="coerce")
-p_kpa      = pd.to_numeric(df[press_col], errors="coerce")
-n_gas_umol = pd.to_numeric(df[gas_col],  errors="coerce")
+# time_h     = pd.to_numeric(df[time_col], errors="coerce")
+# p_kpa      = pd.to_numeric(df[press_col], errors="coerce")
+# n_gas_umol = pd.to_numeric(df[gas_col],  errors="coerce")
 
-valid = time_h.notna() & p_kpa.notna() & n_gas_umol.notna()
-time_h, p_kpa, n_gas_umol = [s[valid].reset_index(drop=True) for s in (time_h, p_kpa, n_gas_umol)]
+# valid = time_h.notna() & p_kpa.notna() & n_gas_umol.notna()
+# time_h, p_kpa, n_gas_umol = [s[valid].reset_index(drop=True) for s in (time_h, p_kpa, n_gas_umol)]
 
-# Start time at 0 (column is already hours)
-time_h = time_h - time_h.iloc[0]
+# # Start time at 0 (column is already hours)
+# time_h = time_h - time_h.iloc[0]
 
-# --- compute dissolved & TOTAL O2 (absolute) ---
-n_aq_umol_abs = n_aq_umol_from_kpa(p_kpa)
-n_tot_umol    = n_gas_umol + n_aq_umol_abs
+# # --- compute dissolved & TOTAL O2 (absolute) ---
+# n_aq_umol_abs = n_aq_umol_from_kpa(p_kpa)
+# n_tot_umol    = n_gas_umol + n_aq_umol_abs
 
-# --- SAVE CSV with parts and total (µmol) ---
-out_df = pd.DataFrame({
-    "Elapsed Time (h)": time_h,
-    "n_gas (µmol)": n_gas_umol,
-    "n_aq (µmol)": n_aq_umol_abs,
-    "n_tot (µmol)": n_tot_umol
-})
+# # --- SAVE CSV with parts and total (µmol) ---
+# out_df = pd.DataFrame({
+#     "Elapsed Time (h)": time_h,
+#     "n_gas (µmol)": n_gas_umol,
+#     "n_aq (µmol)": n_aq_umol_abs,
+#     "n_tot (µmol)": n_tot_umol
+# })
 
-out_path = Path(csv_path).with_name(Path(csv_path).stem + "_parts_and_total_umol.csv")
-out_df.to_csv(out_path, index=False, float_format="%.6f")
-print(f"Saved: {out_path}")
+# out_path = Path(csv_path).with_name(Path(csv_path).stem + "_parts_and_total_umol.csv")
+# out_df.to_csv(out_path, index=False, float_format="%.6f")
+# print(f"Saved: {out_path}")
 
-# ---------- PLOT (optional) ----------
-fig, ax = plt.subplots(figsize=(7.6, 4.8))
-ax.plot(time_h, n_gas_umol,    linewidth=2, label="Headspace O₂ (µmol)")
-ax.plot(time_h, n_aq_umol_abs, linewidth=2, label="Dissolved O₂, nₐq (µmol)")
-ax.plot(time_h, n_tot_umol,    linewidth=2, label="Total O₂ (µmol)")
-ax.axhline(n_theory, linestyle="--", linewidth=1.5, label=f"Theoretical = {n_theory} µmol")
-ax.set_xlabel("Elapsed Time (h)")
-ax.set_ylabel("Amount (µmol)")
-ax.grid(True, alpha=0.3)
-ax.legend()
-plt.tight_layout()
-plt.show()
+# # ---------- PLOT (optional) ----------
+# fig, ax = plt.subplots(figsize=(7.6, 4.8))
+# ax.plot(time_h, n_gas_umol,    linewidth=2, label="Headspace O₂ (µmol)")
+# ax.plot(time_h, n_aq_umol_abs, linewidth=2, label="Dissolved O₂, nₐq (µmol)")
+# ax.plot(time_h, n_tot_umol,    linewidth=2, label="Total O₂ (µmol)")
+# ax.axhline(n_theory, linestyle="--", linewidth=1.5, label=f"Theoretical = {n_theory} µmol")
+# ax.set_xlabel("Elapsed Time (h)")
+# ax.set_ylabel("Amount (µmol)")
+# ax.grid(True, alpha=0.3)
+# ax.legend()
+# plt.tight_layout()
+# plt.show()
